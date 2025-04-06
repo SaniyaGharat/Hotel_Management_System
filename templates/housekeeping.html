@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Housekeeping</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}" class="active"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Housekeeping Management</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="content-section">
+                <h2>Room Status Management</h2>
+                
+                <div class="housekeeping-grid">
+                    {% for room in rooms %}
+                    <div class="room-card status-{{ room.status|lower }}">
+                        <div class="room-number">{{ room.room_number }}</div>
+                        <div class="room-status">{{ room.status }}</div>
+                        <div class="room-actions">
+                            <button class="btn btn-small" onclick="openModal('updateRoomStatusModal{{ room.id }}')">Update</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Update Room Status Modal -->
+                    <div id="updateRoomStatusModal{{ room.id }}" class="modal">
+                        <div class="modal-content">
+                            <span class="close" onclick="closeModal('updateRoomStatusModal{{ room.id }}')">&times;</span>
+                            <h2>Update Room Status</h2>
+                            <form action="{{ url_for('update_housekeeping', id=room.id) }}" method="post">
+                                <div class="form-group">
+                                    <label for="room_number">Room Number</label>
+                                    <input type="text" value="{{ room.room_number }}" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select name="status" required>
+                                        <option value="Available" {% if room.status == 'Available' %}selected{% endif %}>Available</option>
+                                        <option value="Occupied" {% if room.status == 'Occupied' %}selected{% endif %}>Occupied</option>
+                                        <option value="Maintenance" {% if room.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Status</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

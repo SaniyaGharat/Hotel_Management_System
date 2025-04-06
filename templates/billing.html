@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Billing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}" class="active"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Billing Management</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Pending Bills</h2>
+                    <button class="btn btn-primary" onclick="openModal('newBillModal')">Create New Bill</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Guest</th>
+                                <th>Room</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Payment Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in reservations %}
+                            <tr>
+                                <td>{{ reservation.guest_name }}</td>
+                                <td>{{ reservation.room_number }}</td>
+                                <td>{{ reservation.check_in }}</td>
+                                <td>{{ reservation.check_out }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ reservation.payment_status }}">
+                                        {{ reservation.payment_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-small" onclick="generateBill({{ reservation.id|tojson|safe }})">Generate Bill</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="no-data">No pending bills</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Bill History</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Guest</th>
+                                <th>Room</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in bills %}
+                            <tr>
+                                <td>{{ bill.id }}</td>
+                                <td>{{ bill.guest_name }}</td>
+                                <td>{{ bill.room_number }}</td>
+                                <td>${{ bill.total_amount }}</td>
+                                <td>{{ bill.payment_method }}</td>
+                                <td>{{ bill.payment_date }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ bill.status }}">
+                                        {{ bill.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="no-data">No bill history</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Bill Modal -->
+    <div id="newBillModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('newBillModal')">&times;</span>
+            <h2>Create New Bill</h2>
+            <form id="billForm" action="{{ url_for('create_bill') }}" method="post">
+                <div class="form-group">
+                    <label for="reservation_id">Select Reservation</label>
+                    <select name="reservation_id" id="reservation_id" required onchange="generateBill(this.value)">
+                        <option value="">-- Select Reservation --</option>
+                        {% for reservation in reservations %}
+                        <option value="{{ reservation.id }}">{{ reservation.guest_name }} - Room {{ reservation.room_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="billDetails" class="bill-details" style="display: none;">
+                    <div class="bill-header">
+                        <h3>Bill Details</h3>
+                        <div class="guest-info">
+                            <p><strong>Guest:</strong> <span id="guestName"></span></p>
+                            <p><strong>Room:</strong> <span id="roomNumber"></span></p>
+                            <p><strong>Stay:</strong> <span id="stayDates"></span> (<span id="daysStayed"></span> days)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bill-items">
+                        <div class="bill-item">
+                            <span class="item-name">Room Charges</span>
+                            <span class="item-amount" id="roomCharge"></span>
+                        </div>
+                        
+                        <div id="serviceCharges">
+                            <!-- Service charges will be added here dynamically -->
+                        </div>
+                        
+                        <div class="bill-total">
+                            <span class="total-label">Total Amount</span>
+                            <span class="total-amount" id="totalAmount"></span>
+                        </div>
+                        
+                        <div class="bill-payment">
+                            <span class="payment-label">Amount Paid</span>
+                            <span class="payment-amount" id="paidAmount"></span>
+                        </div>
+                        
+                        <div class="bill-balance">
+                            <span class="balance-label">Balance Due</span>
+                            <span class="balance-amount" id="balanceAmount"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="payment_method">Payment Method</label>
+                        <select name="payment_method" required>
+                            <option value="cash">Cash</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="debit_card">Debit Card</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="status">Payment Status</label>
+                        <select name="status" required>
+                            <option value="paid">Paid</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    
+                    <input type="hidden" name="total_amount" id="hiddenTotalAmount">
+                    
+                    <button type="submit" class="btn btn-primary">Create Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}" class="active"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_rooms }}</div>
+                    <div class="stat-label">Total Rooms</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ available_rooms }}</div>
+                    <div class="stat-label">Available Rooms</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ today_checkins }}</div>
+                    <div class="stat-label">Today's Check-ins</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ today_checkouts }}</div>
+                    <div class="stat-label">Today's Check-outs</div>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h2>Recent Reservations</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Guest</th>
+                                <th>Room</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in recent_reservations %}
+                            <tr>
+                                <td>{{ reservation.guest_name }}</td>
+                                <td>{{ reservation.room_number }}</td>
+                                <td>{{ reservation.check_in }}</td>
+                                <td>{{ reservation.check_out }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ reservation.status }}">
+                                        {{ reservation.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="no-data">No recent reservations</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Rooms</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}" class="active"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Room Management</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Rooms List</h2>
+                    <button class="btn btn-primary" onclick="openModal('addRoomModal')">Add New Room</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Room #</th>
+                                <th>Type</th>
+                                <th>Capacity</th>
+                                <th>Price</th>
+                                <th>Amenities</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room in rooms %}
+                            <tr>
+                                <td>{{ room.room_number }}</td>
+                                <td>{{ room.room_type }}</td>
+                                <td>{{ room.capacity }}</td>
+                                <td>${{ room.price }}</td>
+                                <td class="amenities-cell">
+                                    {% set amenities_dict = room.amenities %}
+                                    {% if amenities_dict.wifi %}
+                                    <span class="amenity">WiFi</span>
+                                    {% endif %}
+                                    
+                                    {% if amenities_dict.tv %}
+                                    <span class="amenity">TV</span>
+                                    {% endif %}
+                                    
+                                    {% if amenities_dict.ac %}
+                                    <span class="amenity">AC</span>
+                                    {% endif %}
+                                    
+                                    {% if amenities_dict.minibar %}
+                                    <span class="amenity">Minibar</span>
+                                    {% endif %}
+                                    
+                                    {% if amenities_dict.jacuzzi %}
+                                    <span class="amenity">Jacuzzi</span>
+                                    {% endif %}
+                                    
+                                    {% if amenities_dict.balcony %}
+                                    <span class="amenity">Balcony</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ room.status | lower }}">
+                                        {{ room.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openEditRoomModal({{ room.id }})">Edit</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="no-data">No rooms available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Room Modal -->
+    <div id="addRoomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Room</h2>
+                <span class="close" onclick="closeModal('addRoomModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('add_room') }}" method="post">
+                    <div class="form-group">
+                        <label for="room_number">Room Number</label>
+                        <input type="text" id="room_number" name="room_number" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="room_type">Room Type</label>
+                            <select id="room_type" name="room_type" required>
+                                <option value="Standard">Standard</option>
+                                <option value="Deluxe">Deluxe</option>
+                                <option value="Suite">Suite</option>
+                                <option value="Executive">Executive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="capacity">Capacity</label>
+                            <input type="number" id="capacity" name="capacity" min="1" max="10" value="2" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Price per Night ($)</label>
+                        <input type="number" id="price" name="price" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Amenities</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="wifi" checked> WiFi</label>
+                            <label><input type="checkbox" name="tv" checked> TV</label>
+                            <label><input type="checkbox" name="ac" checked> AC</label>
+                            <label><input type="checkbox" name="minibar"> Minibar</label>
+                            <label><input type="checkbox" name="jacuzzi"> Jacuzzi</label>
+                            <label><input type="checkbox" name="balcony"> Balcony</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addRoomModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Room Modal -->
+    <div id="editRoomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Room</h2>
+                <span class="close" onclick="closeModal('editRoomModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editRoomForm" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_room_type">Room Type</label>
+                            <select id="edit_room_type" name="room_type" required>
+                                <option value="Standard">Standard</option>
+                                <option value="Deluxe">Deluxe</option>
+                                <option value="Suite">Suite</option>
+                                <option value="Executive">Executive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_capacity">Capacity</label>
+                            <input type="number" id="edit_capacity" name="capacity" min="1" max="10" value="2" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_price">Price per Night ($)</label>
+                            <input type="number" id="edit_price" name="price" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_status">Status</label>
+                            <select id="edit_status" name="status" required>
+                                <option value="Available">Available</option>
+                                <option value="Occupied">Occupied</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Amenities</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="wifi" id="edit_wifi"> WiFi</label>
+                            <label><input type="checkbox" name="tv" id="edit_tv"> TV</label>
+                            <label><input type="checkbox" name="ac" id="edit_ac"> AC</label>
+                            <label><input type="checkbox" name="minibar" id="edit_minibar"> Minibar</label>
+                            <label><input type="checkbox" name="jacuzzi" id="edit_jacuzzi"> Jacuzzi</label>
+                            <label><input type="checkbox" name="balcony" id="edit_balcony"> Balcony</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editRoomModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

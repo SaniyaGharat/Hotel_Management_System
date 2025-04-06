@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Reservations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}" class="active"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Reservation Management</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Reservations</h2>
+                    <button class="btn btn-primary" onclick="openModal('addReservationModal')">New Reservation</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Guest Name</th>
+                                <th>Room</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Adults/Children</th>
+                                <th>Status</th>
+                                <th>Payment</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in reservations %}
+                            <tr>
+                                <td>{{ reservation.guest_name }}</td>
+                                <td>{{ reservation.room_number }} ({{ reservation.room_type }})</td>
+                                <td>{{ reservation.check_in }}</td>
+                                <td>{{ reservation.check_out }}</td>
+                                <td>{{ reservation.adults }}/{{ reservation.children }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ reservation.status }}">
+                                        {{ reservation.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge payment-{{ reservation.payment_status }}">
+                                        {{ reservation.payment_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="openEditReservationModal({{ reservation|tojson|safe }})">Update</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="no-data">No reservations available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Reservation Modal -->
+    <div id="addReservationModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>New Reservation</h2>
+                <span class="close" onclick="closeModal('addReservationModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('add_reservation') }}" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="room_id">Room</label>
+                            <select id="room_id" name="room_id" required>
+                                <option value="">Select a room</option>
+                                {% for room in rooms %}
+                                <option value="{{ room.id }}">{{ room.room_number }} - {{ room.room_type }} ({{ room.capacity }} persons)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="guest_name">Guest Name</label>
+                            <input type="text" id="guest_name" name="guest_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="guest_email">Email</label>
+                            <input type="email" id="guest_email" name="guest_email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="guest_phone">Phone</label>
+                            <input type="text" id="guest_phone" name="guest_phone">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="check_in">Check-in Date</label>
+                            <input type="date" id="check_in" name="check_in" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="check_out">Check-out Date</label>
+                            <input type="date" id="check_out" name="check_out" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adults">Adults</label>
+                            <input type="number" id="adults" name="adults" min="1" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="children">Children</label>
+                            <input type="number" id="children" name="children" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="payment_status">Payment Status</label>
+                            <select id="payment_status" name="payment_status" required>
+                                <option value="pending">Pending</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="payment_amount">Deposit Amount</label>
+                            <input type="number" id="payment_amount" name="payment_amount" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addReservationModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Reservation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Reservation Modal -->
+    <div id="editReservationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Update Reservation</h2>
+                <span class="close" onclick="closeModal('editReservationModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editReservationForm" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_guest_name">Guest Name</label>
+                            <input type="text" id="edit_guest_name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_room_number">Room</label>
+                            <input type="text" id="edit_room_number" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_status">Status</label>
+                            <select id="edit_status" name="status" required>
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="checked_in">Checked In</option>
+                                <option value="checked_out">Checked Out</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_payment_status">Payment Status</label>
+                            <select id="edit_payment_status" name="payment_status" required>
+                                <option value="pending">Pending</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editReservationModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Reservation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Services</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}" class="active"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>Services Management</h1>
+                <div class="user-info">
+                    <span>Welcome, {{ session['user_name'] }}</span>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Available Services Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Available Services</h2>
+                    <button class="btn btn-primary" onclick="openModal('addServiceModal')">Add New Service</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Service Name</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for service in services %}
+                            <tr>
+                                <td>{{ service.service_name }}</td>
+                                <td>{{ service.description }}</td>
+                                <td>${{ service.price }}</td>
+                                <td>
+                                    {% if service.available %}
+                                    <span class="status-badge status-available">Available</span>
+                                    {% else %}
+                                    <span class="status-badge status-unavailable">Unavailable</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="no-data">No services available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Request Service Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Request Service</h2>
+                </div>
+                
+                <div class="card">
+                    <form action="{{ url_for('add_service_order') }}" method="post">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reservation_id">Guest/Room</label>
+                                <select id="reservation_id" name="reservation_id" required>
+                                    <option value="">Select guest</option>
+                                    {% for reservation in reservations %}
+                                    <option value="{{ reservation.id }}">{{ reservation.guest_name }} - Room {{ reservation.room_number }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="service_id">Service</label>
+                                <select id="service_id" name="service_id" required>
+                                    <option value="">Select service</option>
+                                    {% for service in services %}
+                                    {% if service.available %}
+                                    <option value="{{ service.id }}">{{ service.service_name }} - ${{ service.price }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quantity">Quantity</label>
+                                <input type="number" id="quantity" name="quantity" min="1" value="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="notes">Notes</label>
+                                <textarea id="notes" name="notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Request Service</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Service Orders Section -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Service Orders</h2>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Guest</th>
+                                <th>Room</th>
+                                <th>Service</th>
+                                <th>Quantity</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in service_orders %}
+                            <tr>
+                                <td>{{ order.id }}</td>
+                                <td>{{ order.guest_name }}</td>
+                                <td>{{ order.room_number }}</td>
+                                <td>{{ order.service_name }}</td>
+                                <td>{{ order.quantity }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ order.status }}">
+                                        {{ order.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary update-order-btn" 
+                                            data-order='{{ order|tojson|safe }}'>Update</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="no-data">No service orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Service</h2>
+                <span class="close" onclick="closeModal('addServiceModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('add_service') }}" method="post">
+                    <div class="form-group">
+                        <label for="service_name">Service Name</label>
+                        <input type="text" id="service_name" name="service_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Price ($)</label>
+                        <input type="number" id="price" name="price" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" name="available" checked>
+                            <span class="checkbox-label">Available</span>
+                        </label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addServiceModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Service</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Update Order Modal -->
+    <div id="updateOrderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Update Service Order</h2>
+                <span class="close" onclick="closeModal('updateOrderModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="updateOrderForm" method="post">
+                    <div class="form-group">
+                        <label for="order_details">Order Details</label>
+                        <p id="order_details" class="form-static-text"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="update_status">Status</label>
+                        <select id="update_status" name="status" required>
+                            <option value="pending">Pending</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('updateOrderModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
