@@ -106,3 +106,42 @@ CREATE TABLE IF NOT EXISTS feedback (
     feedback_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
 );
+
+-- Staff table
+CREATE TABLE IF NOT EXISTS staff (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    role ENUM('manager', 'receptionist', 'housekeeping', 'maintenance', 'chef', 'security') NOT NULL,
+    shift ENUM('morning', 'afternoon', 'night') NOT NULL DEFAULT 'morning',
+    salary DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    status ENUM('active', 'on_leave', 'terminated') NOT NULL DEFAULT 'active',
+    hire_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample staff data
+INSERT INTO staff (name, email, phone, role, shift, salary, status, hire_date) VALUES
+('John Smith', 'john@hotel.com', '555-0101', 'manager', 'morning', 5000.00, 'active', '2024-01-15'),
+('Sarah Johnson', 'sarah@hotel.com', '555-0102', 'receptionist', 'morning', 3000.00, 'active', '2024-03-01'),
+('Mike Brown', 'mike@hotel.com', '555-0103', 'housekeeping', 'afternoon', 2500.00, 'active', '2024-06-10'),
+('Emily Davis', 'emily@hotel.com', '555-0104', 'chef', 'morning', 3500.00, 'active', '2024-02-20'),
+('Tom Wilson', 'tom@hotel.com', '555-0105', 'security', 'night', 2800.00, 'active', '2024-04-05');
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('info', 'warning', 'success', 'danger') NOT NULL DEFAULT 'info',
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    user_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Insert sample notifications
+INSERT INTO notifications (title, message, type, is_read) VALUES
+('Welcome!', 'Welcome to Hotel Management System. All systems are running normally.', 'success', FALSE),
+('System Update', 'The system has been updated with new features: Staff Management, Reports, and Guest History.', 'info', FALSE);

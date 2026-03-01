@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hotel Management System - Services</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
+
 <body>
     <div class="container">
         <div class="sidebar">
@@ -19,26 +21,38 @@
                 <li><a href="{{ url_for('services') }}" class="active"><span class="icon">🛎️</span> Services</a></li>
                 <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
                 <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('staff') }}"><span class="icon">👤</span> Staff</a></li>
+                <li><a href="{{ url_for('reports') }}"><span class="icon">📊</span> Reports</a></li>
+                <li><a href="{{ url_for('guests') }}"><span class="icon">🔍</span> Guests</a></li>
                 <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
             </ul>
         </div>
-        
+
         <div class="main-content">
             <div class="header">
                 <h1>Services Management</h1>
-                <div class="user-info">
-                    <span>Welcome, {{ session['user_name'] }}</span>
+                <div class="header-right">
+                    <div class="notification-bell" onclick="toggleNotifications()">
+                        🔔
+                        {% if unread_notifications > 0 %}
+                        <span class="notification-badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                        <div class="notification-dropdown" id="notificationDropdown"></div>
+                    </div>
+                    <div class="user-info">
+                        <span>Welcome, {{ session['user_name'] }}</span>
+                    </div>
                 </div>
             </div>
-            
+
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
 
             <!-- Available Services Section -->
@@ -47,7 +61,7 @@
                     <h2>Available Services</h2>
                     <button class="btn btn-primary" onclick="openModal('addServiceModal')">Add New Service</button>
                 </div>
-                
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -87,7 +101,7 @@
                 <div class="section-header">
                     <h2>Request Service</h2>
                 </div>
-                
+
                 <div class="card">
                     <form action="{{ url_for('add_service_order') }}" method="post">
                         <div class="form-row">
@@ -96,7 +110,8 @@
                                 <select id="reservation_id" name="reservation_id" required>
                                     <option value="">Select guest</option>
                                     {% for reservation in reservations %}
-                                    <option value="{{ reservation.id }}">{{ reservation.guest_name }} - Room {{ reservation.room_number }}</option>
+                                    <option value="{{ reservation.id }}">{{ reservation.guest_name }} - Room {{
+                                        reservation.room_number }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -106,7 +121,8 @@
                                     <option value="">Select service</option>
                                     {% for service in services %}
                                     {% if service.available %}
-                                    <option value="{{ service.id }}">{{ service.service_name }} - ${{ service.price }}</option>
+                                    <option value="{{ service.id }}">{{ service.service_name }} - ${{ service.price }}
+                                    </option>
                                     {% endif %}
                                     {% endfor %}
                                 </select>
@@ -136,7 +152,7 @@
                 <div class="section-header">
                     <h2>Service Orders</h2>
                 </div>
-                
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -166,8 +182,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary update-order-btn" 
-                                            data-order='{{ order|tojson|safe }}'>Update</button>
+                                    <button class="btn btn-sm btn-primary update-order-btn"
+                                        data-order='{{ order|tojson|safe }}'>Update</button>
                                 </td>
                             </tr>
                             {% else %}
@@ -181,7 +197,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add Service Modal -->
     <div id="addServiceModal" class="modal">
         <div class="modal-content">
@@ -210,14 +226,15 @@
                         </label>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('addServiceModal')">Cancel</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="closeModal('addServiceModal')">Cancel</button>
                         <button type="submit" class="btn btn-primary">Add Service</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    
+
     <!-- Update Order Modal -->
     <div id="updateOrderModal" class="modal">
         <div class="modal-content">
@@ -241,14 +258,16 @@
                         </select>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('updateOrderModal')">Cancel</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="closeModal('updateOrderModal')">Cancel</button>
                         <button type="submit" class="btn btn-primary">Update Status</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

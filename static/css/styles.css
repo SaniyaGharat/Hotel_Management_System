@@ -631,3 +631,258 @@ h2 {
         margin-top: 10px;
     }
 }
+
+/* ==================== NEW FEATURE STYLES ==================== */
+
+/* Header Right (notification bell + user info) */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Notification Bell */
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    font-size: 1.4rem;
+    padding: 5px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.notification-dropdown {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.notification-dropdown.show {
+    display: block;
+}
+
+.notification-dropdown-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--medium-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-dropdown-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.notification-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--light-gray);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notification-item:hover {
+    background-color: var(--light-gray);
+}
+
+.notification-item.unread {
+    background-color: rgba(74, 144, 226, 0.05);
+    border-left: 3px solid var(--accent-color);
+}
+
+.notification-item .notif-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+}
+
+.notification-item .notif-message {
+    font-size: 0.8rem;
+    color: var(--dark-gray);
+}
+
+.notification-item .notif-time {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 4px;
+}
+
+.notification-empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--dark-gray);
+}
+
+/* Staff Role Badges */
+.role-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.role-manager { background: rgba(155,89,182,0.15); color: #8e44ad; }
+.role-receptionist { background: rgba(52,152,219,0.15); color: #2980b9; }
+.role-housekeeping { background: rgba(46,204,113,0.15); color: #27ae60; }
+.role-maintenance { background: rgba(243,156,18,0.15); color: #e67e22; }
+.role-chef { background: rgba(231,76,60,0.15); color: #c0392b; }
+.role-security { background: rgba(44,62,80,0.15); color: #2c3e50; }
+
+.status-active { background: rgba(46,204,113,0.2); color: #27ae60; }
+.status-on_leave { background: rgba(243,156,18,0.2); color: #f39c12; }
+.status-terminated { background: rgba(231,76,60,0.2); color: #c0392b; }
+
+/* Reports Page */
+.reports-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.status-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: var(--light-gray);
+    border-radius: 6px;
+}
+
+.status-count {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+.feedback-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.feedback-item {
+    padding: 12px;
+    background: var(--light-gray);
+    border-radius: 6px;
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.feedback-rating {
+    font-size: 0.85rem;
+}
+
+.feedback-comment {
+    font-size: 0.9rem;
+    color: var(--dark-gray);
+    font-style: italic;
+}
+
+/* Guests Page */
+.search-form {
+    margin-bottom: 0;
+}
+
+.search-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+}
+
+.stays-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+/* Housekeeping Grid */
+.housekeeping-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.room-card {
+    padding: 15px;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.room-number {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.room-status {
+    font-size: 0.9rem;
+    margin: 5px 0 10px;
+}
+
+/* Payment status badges */
+.payment-pending { background: rgba(155,89,182,0.2); color: #8e44ad; }
+.payment-partial { background: rgba(243,156,18,0.2); color: #f39c12; }
+.payment-paid { background: rgba(46,204,113,0.2); color: #27ae60; }
+
+/* Responsive Reports */
+@media (max-width: 768px) {
+    .reports-grid {
+        grid-template-columns: 1fr;
+    }
+    .search-bar {
+        flex-direction: column;
+    }
+}

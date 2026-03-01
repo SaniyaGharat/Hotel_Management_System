@@ -626,5 +626,313 @@ def feedback(reservation_id):
     
     return render_template('feedback.html', reservation=reservation)
 
+# ==================== NEW FEATURES ====================
+
+# Staff Management
+@app.route('/staff')
+@login_required
+def staff():
+    all_staff = execute_query("SELECT * FROM staff ORDER BY name")
+    if all_staff:
+        all_staff = convert_decimal(all_staff)
+    return render_template('staff.html', staff=all_staff or [])
+
+@app.route('/staff/add', methods=['POST'])
+@login_required
+def add_staff():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        phone = request.form['phone']
+        role = request.form['role']
+        shift = request.form['shift']
+        salary = request.form['salary']
+        hire_date = request.form['hire_date']
+        
+        execute_query(
+            """INSERT INTO staff (name, email, phone, role, shift, salary, hire_date) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+            (name, email, phone, role, shift, salary, hire_date),
+            commit=True
+        )
+        
+        # Create notification
+        execute_query(
+            "INSERT INTO notifications (title, message, type) VALUES (%s, %s, 'info')",
+            (f'New Staff Added', f'{name} has been added as {role}.'),
+            commit=True
+        )
+        
+        flash('Staff member added successfully', 'success')
+        return redirect(url_for('staff'))
+
+@app.route('/staff/update/<int:id>', methods=['POST'])
+@login_required
+def update_staff(id):
+    if request.method == 'POST':
+        try:
+            name = request.form['name']
+            email = request.form['email']
+            phone = request.form['phone']
+            role = request.form['role']
+            shift = request.form['shift']
+            salary = request.form['salary']
+            status = request.form['status']
+            
+            execute_query(
+                """UPDATE staff SET name=%s, email=%s, phone=%s, role=%s, 
+                   shift=%s, salary=%s, status=%s WHERE id=%s""",
+                (name, email, phone, role, shift, salary, status, id),
+                commit=True
+            )
+            
+            return jsonify({'message': 'Staff updated successfully'}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/staff/get/<int:id>')
+@login_required
+def get_staff(id):
+    try:
+        member = execute_query("SELECT * FROM staff WHERE id = %s", (id,), fetchone=True)
+        if not member:
+            return jsonify({'error': 'Staff member not found'}), 404
+        member = convert_decimal(member)
+        member['hire_date'] = str(member['hire_date'])
+        return jsonify(member)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/staff/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_staff(id):
+    execute_query("DELETE FROM staff WHERE id = %s", (id,), commit=True)
+    flash('Staff member removed', 'success')
+    return redirect(url_for('staff'))
+
+# Reports & Analytics
+@app.route('/reports')
+@login_required
+def reports():
+    # Total revenue
+    total_revenue = execute_query(
+        "SELECT COALESCE(SUM(total_amount), 0) as total FROM bills WHERE status = 'paid'",
+        fetchone=True
+    )
+    
+    # Total reservations
+    total_reservations = execute_query(
+        "SELECT COUNT(*) as count FROM reservations", fetchone=True
+    )
+    
+    # Occupancy rate
+    total_rooms = execute_query("SELECT COUNT(*) as count FROM rooms", fetchone=True)
+    occupied_rooms = execute_query(
+        "SELECT COUNT(*) as count FROM rooms WHERE status = 'Occupied'", fetchone=True
+    )
+    occupancy_rate = 0
+    if total_rooms and total_rooms['count'] > 0:
+        occupancy_rate = round((occupied_rooms['count'] / total_rooms['count']) * 100, 1)
+    
+    # Active staff
+    active_staff = execute_query(
+        "SELECT COUNT(*) as count FROM staff WHERE status = 'active'", fetchone=True
+    )
+    
+    # Average rating
+    avg_rating = execute_query(
+        "SELECT COALESCE(AVG(rating), 0) as avg_rating FROM feedback", fetchone=True
+    )
+    
+    # Reservations by status
+    reservations_by_status = execute_query(
+        """SELECT status, COUNT(*) as count FROM reservations 
+           GROUP BY status ORDER BY count DESC"""
+    )
+    
+    # Monthly revenue (last 6 months)
+    monthly_revenue = execute_query(
+        """SELECT DATE_FORMAT(payment_date, '%Y-%m') as month, 
+                  SUM(total_amount) as revenue 
+           FROM bills WHERE status = 'paid' 
+           AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+           GROUP BY DATE_FORMAT(payment_date, '%Y-%m') 
+           ORDER BY month"""
+    )
+    
+    # Room type distribution
+    room_types = execute_query(
+        "SELECT room_type, COUNT(*) as count FROM rooms GROUP BY room_type"
+    )
+    
+    # Recent feedback
+    recent_feedback = execute_query(
+        """SELECT f.*, r.guest_name, ro.room_number 
+           FROM feedback f 
+           JOIN reservations r ON f.reservation_id = r.id 
+           JOIN rooms ro ON r.room_id = ro.id 
+           ORDER BY f.feedback_date DESC LIMIT 5"""
+    )
+    
+    return render_template('reports.html',
+        total_revenue=float(total_revenue['total']) if total_revenue else 0,
+        total_reservations=total_reservations['count'] if total_reservations else 0,
+        occupancy_rate=occupancy_rate,
+        active_staff=active_staff['count'] if active_staff else 0,
+        avg_rating=round(float(avg_rating['avg_rating']), 1) if avg_rating else 0,
+        reservations_by_status=reservations_by_status or [],
+        monthly_revenue=convert_decimal(monthly_revenue) if monthly_revenue else [],
+        room_types=room_types or [],
+        recent_feedback=recent_feedback or []
+    )
+
+# Guest History & Search
+@app.route('/guests')
+@login_required
+def guests():
+    search = request.args.get('search', '')
+    
+    if search:
+        guest_list = execute_query(
+            """SELECT guest_name, guest_email, guest_phone, 
+                      COUNT(*) as total_stays, 
+                      SUM(payment_amount) as total_spent,
+                      MAX(check_out) as last_visit
+               FROM reservations 
+               WHERE guest_name LIKE %s OR guest_email LIKE %s OR guest_phone LIKE %s
+               GROUP BY guest_name, guest_email, guest_phone
+               ORDER BY total_stays DESC""",
+            (f'%{search}%', f'%{search}%', f'%{search}%')
+        )
+    else:
+        guest_list = execute_query(
+            """SELECT guest_name, guest_email, guest_phone, 
+                      COUNT(*) as total_stays, 
+                      SUM(payment_amount) as total_spent,
+                      MAX(check_out) as last_visit
+               FROM reservations 
+               GROUP BY guest_name, guest_email, guest_phone
+               ORDER BY total_stays DESC"""
+        )
+    
+    guest_list = convert_decimal(guest_list) if guest_list else []
+    
+    return render_template('guests.html', guests=guest_list, search=search)
+
+@app.route('/guests/<email>')
+@login_required
+def guest_history(email):
+    try:
+        history = execute_query(
+            """SELECT r.*, ro.room_number, ro.room_type 
+               FROM reservations r 
+               JOIN rooms ro ON r.room_id = ro.id 
+               WHERE r.guest_email = %s 
+               ORDER BY r.check_in DESC""",
+            (email,)
+        )
+        history = convert_decimal(history) if history else []
+        
+        # Convert dates to strings
+        for item in history:
+            item['check_in'] = str(item['check_in'])
+            item['check_out'] = str(item['check_out'])
+        
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Room Availability Calendar
+@app.route('/rooms/calendar')
+@login_required
+def room_calendar():
+    try:
+        start_date = request.args.get('start', datetime.now().strftime('%Y-%m-%d'))
+        end_date = request.args.get('end', (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'))
+        
+        rooms = execute_query("SELECT id, room_number, room_type, status FROM rooms ORDER BY room_number")
+        
+        reservations = execute_query(
+            """SELECT room_id, check_in, check_out, status, guest_name 
+               FROM reservations 
+               WHERE check_out >= %s AND check_in <= %s
+               AND status NOT IN ('cancelled')""",
+            (start_date, end_date)
+        )
+        
+        # Build calendar data
+        calendar_data = []
+        for room in rooms:
+            room_entry = {
+                'room_number': room['room_number'],
+                'room_type': room['room_type'],
+                'dates': {}
+            }
+            
+            current = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            
+            while current <= end:
+                date_str = current.strftime('%Y-%m-%d')
+                status = 'available'
+                guest = ''
+                
+                if room['status'] == 'Maintenance':
+                    status = 'maintenance'
+                else:
+                    for res in (reservations or []):
+                        if res['room_id'] == room['id']:
+                            ci = res['check_in'] if isinstance(res['check_in'], datetime) else datetime.strptime(str(res['check_in']), '%Y-%m-%d')
+                            co = res['check_out'] if isinstance(res['check_out'], datetime) else datetime.strptime(str(res['check_out']), '%Y-%m-%d')
+                            if ci <= current < co:
+                                status = 'occupied'
+                                guest = res['guest_name']
+                                break
+                
+                room_entry['dates'][date_str] = {'status': status, 'guest': guest}
+                current += timedelta(days=1)
+            
+            calendar_data.append(room_entry)
+        
+        return jsonify({
+            'start': start_date,
+            'end': end_date,
+            'rooms': calendar_data
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Notifications
+@app.route('/notifications')
+@login_required
+def notifications():
+    all_notifications = execute_query(
+        "SELECT * FROM notifications ORDER BY created_at DESC LIMIT 20"
+    )
+    return jsonify(all_notifications or [])
+
+@app.route('/notifications/read/<int:id>', methods=['POST'])
+@login_required
+def mark_notification_read(id):
+    execute_query("UPDATE notifications SET is_read = TRUE WHERE id = %s", (id,), commit=True)
+    return jsonify({'message': 'Notification marked as read'}), 200
+
+@app.route('/notifications/read-all', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    execute_query("UPDATE notifications SET is_read = TRUE", commit=True)
+    return jsonify({'message': 'All notifications marked as read'}), 200
+
+# Context processor — inject unread notification count into every template
+@app.context_processor
+def inject_notifications():
+    if 'user_id' in session:
+        result = execute_query(
+            "SELECT COUNT(*) as count FROM notifications WHERE is_read = FALSE",
+            fetchone=True
+        )
+        return {'unread_notifications': result['count'] if result else 0}
+    return {'unread_notifications': 0}
+
 if __name__ == '__main__':
     app.run(debug=True)

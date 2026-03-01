@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('staff') }}"><span class="icon">👤</span> Staff</a></li>
+                <li><a href="{{ url_for('reports') }}" class="active"><span class="icon">📊</span> Reports</a></li>
+                <li><a href="{{ url_for('guests') }}"><span class="icon">🔍</span> Guests</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h1>Reports & Analytics</h1>
+                <div class="header-right">
+                    <div class="notification-bell" onclick="toggleNotifications()">
+                        🔔
+                        {% if unread_notifications > 0 %}
+                        <span class="notification-badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                        <div class="notification-dropdown" id="notificationDropdown"></div>
+                    </div>
+                    <div class="user-info">
+                        <span>Welcome, {{ session['user_name'] }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-value">${{ "%.2f"|format(total_revenue) }}</div>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_reservations }}</div>
+                    <div class="stat-label">Total Reservations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ occupancy_rate }}%</div>
+                    <div class="stat-label">Occupancy Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ active_staff }}</div>
+                    <div class="stat-label">Active Staff</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ avg_rating }} ⭐</div>
+                    <div class="stat-label">Avg. Rating</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="reports-grid">
+                <div class="content-section">
+                    <h2>Monthly Revenue</h2>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="content-section">
+                    <h2>Room Type Distribution</h2>
+                    <div class="chart-container">
+                        <canvas id="roomTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservations by Status & Recent Feedback -->
+            <div class="reports-grid">
+                <div class="content-section">
+                    <h2>Reservations by Status</h2>
+                    {% if reservations_by_status %}
+                    <div class="status-breakdown">
+                        {% for item in reservations_by_status %}
+                        <div class="status-item">
+                            <span class="status-badge status-{{ item.status }}">{{ item.status }}</span>
+                            <span class="status-count">{{ item.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="no-data">No reservation data available</p>
+                    {% endif %}
+                </div>
+                <div class="content-section">
+                    <h2>Recent Feedback</h2>
+                    {% if recent_feedback %}
+                    <div class="feedback-list">
+                        {% for fb in recent_feedback %}
+                        <div class="feedback-item">
+                            <div class="feedback-header">
+                                <strong>{{ fb.guest_name }}</strong> — Room {{ fb.room_number }}
+                                <span class="feedback-rating">
+                                    {% for i in range(fb.rating) %}⭐{% endfor %}
+                                </span>
+                            </div>
+                            {% if fb.comments %}
+                            <p class="feedback-comment">"{{ fb.comments }}"</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="no-data">No feedback received yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Revenue Chart
+        const revenueData = {{ monthly_revenue | tojson }};
+        if (revenueData.length > 0) {
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'bar',
+                data: {
+                    labels: revenueData.map(d => d.month),
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: revenueData.map(d => d.revenue),
+                        backgroundColor: 'rgba(74, 111, 165, 0.7)',
+                        borderColor: '#4a6fa5',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => '$' + v } }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('revenueChart').parentElement.innerHTML = '<p class="no-data" style="padding:40px">No revenue data yet</p>';
+        }
+
+        // Room Type Chart
+        const roomData = {{ room_types | tojson }};
+        if (roomData.length > 0) {
+            new Chart(document.getElementById('roomTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: roomData.map(d => d.room_type),
+                    datasets: [{
+                        data: roomData.map(d => d.count),
+                        backgroundColor: ['#4a6fa5', '#6c8fc7', '#f39c12', '#2ecc71'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

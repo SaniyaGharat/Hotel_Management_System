@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management System - Guests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <h2>Hotel MS</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="{{ url_for('rooms') }}"><span class="icon">🛏️</span> Rooms</a></li>
+                <li><a href="{{ url_for('reservations') }}"><span class="icon">📅</span> Reservations</a></li>
+                <li><a href="{{ url_for('services') }}"><span class="icon">🛎️</span> Services</a></li>
+                <li><a href="{{ url_for('housekeeping') }}"><span class="icon">🧹</span> Housekeeping</a></li>
+                <li><a href="{{ url_for('billing') }}"><span class="icon">💰</span> Billing</a></li>
+                <li><a href="{{ url_for('staff') }}"><span class="icon">👤</span> Staff</a></li>
+                <li><a href="{{ url_for('reports') }}"><span class="icon">📊</span> Reports</a></li>
+                <li><a href="{{ url_for('guests') }}" class="active"><span class="icon">🔍</span> Guests</a></li>
+                <li><a href="{{ url_for('logout') }}"><span class="icon">🚪</span> Logout</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h1>Guest Directory</h1>
+                <div class="header-right">
+                    <div class="notification-bell" onclick="toggleNotifications()">
+                        🔔
+                        {% if unread_notifications > 0 %}
+                        <span class="notification-badge">{{ unread_notifications }}</span>
+                        {% endif %}
+                        <div class="notification-dropdown" id="notificationDropdown"></div>
+                    </div>
+                    <div class="user-info">
+                        <span>Welcome, {{ session['user_name'] }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Search Guests</h2>
+                </div>
+                <form action="{{ url_for('guests') }}" method="get" class="search-form">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Search by name, email, or phone..."
+                            value="{{ search }}" class="search-input">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        {% if search %}
+                        <a href="{{ url_for('guests') }}" class="btn btn-secondary">Clear</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <div class="content-section">
+                <h2>
+                    {% if search %}
+                    Search Results for "{{ search }}" ({{ guests|length }} found)
+                    {% else %}
+                    All Guests ({{ guests|length }})
+                    {% endif %}
+                </h2>
+
+                <div class="table-container">
+                    <table class="data-table" id="guestsTable">
+                        <thead>
+                            <tr>
+                                <th>Guest Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Total Stays</th>
+                                <th>Total Spent</th>
+                                <th>Last Visit</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for guest in guests %}
+                            <tr>
+                                <td><strong>{{ guest.guest_name }}</strong></td>
+                                <td>{{ guest.guest_email }}</td>
+                                <td>{{ guest.guest_phone or '—' }}</td>
+                                <td>
+                                    <span class="stays-badge">{{ guest.total_stays }}</span>
+                                </td>
+                                <td>${{ "%.2f"|format(guest.total_spent or 0) }}</td>
+                                <td>{{ guest.last_visit or '—' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary"
+                                        onclick="viewGuestHistory('{{ guest.guest_email }}', '{{ guest.guest_name }}')">
+                                        View History
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="no-data">
+                                    {% if search %}
+                                    No guests found matching "{{ search }}"
+                                    {% else %}
+                                    No guests found. Create a reservation to see guests here.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guest History Modal -->
+    <div class="modal" id="guestHistoryModal">
+        <div class="modal-content" style="max-width:900px">
+            <span class="close-modal" onclick="closeModal('guestHistoryModal')">&times;</span>
+            <div class="modal-header">
+                <h2>Stay History — <span id="historyGuestName"></span></h2>
+            </div>
+            <div id="historyContent">
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        function viewGuestHistory(email, name) {
+            document.getElementById('historyGuestName').textContent = name;
+            document.getElementById('historyContent').innerHTML = '<p>Loading...</p>';
+            openModal('guestHistoryModal');
+
+            fetch(`/guests/${encodeURIComponent(email)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        document.getElementById('historyContent').innerHTML = '<p class="no-data">No stay history found.</p>';
+                        return;
+                    }
+
+                    let html = '<table class="data-table"><thead><tr>' +
+                        '<th>Room</th><th>Type</th><th>Check-in</th><th>Check-out</th>' +
+                        '<th>Status</th><th>Payment</th></tr></thead><tbody>';
+
+                    data.forEach(r => {
+                        html += `<tr>
+                            <td>${r.room_number}</td>
+                            <td>${r.room_type}</td>
+                            <td>${r.check_in}</td>
+                            <td>${r.check_out}</td>
+                            <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+                            <td>$${(r.payment_amount || 0).toFixed(2)} 
+                                <span class="status-badge status-${r.payment_status}">${r.payment_status}</span>
+                            </td>
+                        </tr>`;
+                    });
+
+                    html += '</tbody></table>';
+                    document.getElementById('historyContent').innerHTML = html;
+                })
+                .catch(err => {
+                    document.getElementById('historyContent').innerHTML = '<p class="no-data">Error loading history.</p>';
+                });
+        }
+    </script>
+</body>
+
+</html>
