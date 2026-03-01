@@ -1,6 +1,6 @@
 # 🏨 Hotel Management System
 
-A full-featured web-based Hotel Management System built with **Flask** and **MySQL** for managing hotel operations including rooms, reservations, services, housekeeping, and billing.
+A full-featured web-based Hotel Management System built with **Flask** and **MySQL** for managing hotel operations including rooms, reservations, services, housekeeping, billing, staff, and analytics.
 
 ---
 
@@ -10,10 +10,14 @@ A full-featured web-based Hotel Management System built with **Flask** and **MyS
 |--------|-------------|
 | **Dashboard** | Real-time overview of total rooms, availability, today's check-ins/check-outs, and recent reservations |
 | **Room Management** | Add, edit, and track rooms with types (Standard, Deluxe, Suite, Executive) and amenities (WiFi, TV, AC, minibar, jacuzzi, balcony) |
-| **Reservations** | Create and manage guest bookings with check-in/check-out dates, guest details, and payment tracking |
+| **Reservations** | Create and manage guest bookings with double-booking prevention, check-in/check-out dates, guest details, and payment tracking |
 | **Services** | Manage hotel services (Room Service, Spa, Airport Shuttle, Laundry) and assign service orders to guests |
 | **Housekeeping** | Track and update room statuses (Available, Occupied, Maintenance) |
 | **Billing** | Generate itemized bills with room charges + service costs, support for multiple payment methods |
+| **Staff Management** | Full CRUD for hotel employees — roles (Manager, Receptionist, Housekeeping, Maintenance, Chef, Security), shifts, salary tracking |
+| **Reports & Analytics** | Revenue metrics, occupancy rate, monthly revenue chart (Chart.js), room type distribution, reservation breakdown, guest ratings |
+| **Guest Directory** | Searchable guest list with stay history, total visits, and spending totals |
+| **Notifications** | In-app notification system with bell icon, unread badge, mark-as-read support |
 | **Feedback** | Collect guest ratings (1–5) and comments per reservation |
 | **Authentication** | Role-based login system (Admin, Receptionist, Staff) with session management |
 
@@ -24,6 +28,7 @@ A full-featured web-based Hotel Management System built with **Flask** and **MyS
 - **Backend:** Python, Flask
 - **Database:** MySQL
 - **Frontend:** HTML, CSS, JavaScript
+- **Charts:** Chart.js
 - **Auth:** Session-based with Werkzeug security
 
 ---
@@ -72,8 +77,8 @@ mysql -u root -p < database.sql
 
 This creates:
 - `hotel_management3` database
-- 7 tables: `users`, `rooms`, `reservations`, `services`, `service_orders`, `bills`, `feedback`
-- Sample data: 7 rooms, 4 services, and a default admin user
+- 9 tables: `users`, `rooms`, `reservations`, `services`, `service_orders`, `bills`, `feedback`, `staff`, `notifications`
+- Sample data: 7 rooms, 4 services, 5 staff members, and a default admin user
 
 ### 5. Run the Application
 
@@ -110,7 +115,10 @@ hotel_management_system/
 │   ├── services.html
 │   ├── housekeeping.html
 │   ├── billing.html
-│   └── Readme.md
+│   ├── feedback.html
+│   ├── staff.html      # Staff Management
+│   ├── reports.html    # Reports & Analytics
+│   └── guests.html     # Guest Directory
 ├── static/
 │   ├── css/
 │   │   └── styles.css  # Application styles
@@ -126,12 +134,21 @@ hotel_management_system/
 ```
 users ──────────────── Authentication & roles
 rooms ──────────────── Room inventory & status
-reservations ───────── Guest bookings (FK → rooms)
+reservations ───────── Guest bookings (FK → rooms) with double-booking prevention
 services ───────────── Available hotel services
 service_orders ─────── Service requests (FK → reservations, services)
 bills ──────────────── Payment records (FK → reservations)
 feedback ───────────── Guest reviews (FK → reservations)
+staff ─────────────── Employee records (name, role, shift, salary, status)
+notifications ─────── In-app alerts (title, message, type, read status)
 ```
+
+---
+
+## 🔒 Key Validations
+
+- **Double-booking prevention** — The system checks for overlapping date ranges before allowing a new reservation on any room. Cancelled and checked-out reservations are excluded.
+- **Room status sync** — Room status automatically updates to "Occupied" on check-in and "Available" on check-out.
 
 ---
 

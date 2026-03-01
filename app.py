@@ -36,7 +36,7 @@ def get_db_connection():
 # Helper function to execute query and fetch results
 def execute_query(query, params=None, fetchone=False, commit=False):
     connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor(dictionary=True, buffered=True)
     
     try:
         if params:
@@ -274,6 +274,20 @@ def add_reservation():
         status = 'confirmed'
         payment_status = request.form['payment_status']
         payment_amount = request.form['payment_amount']
+        
+        # Check for overlapping reservations (prevent double-booking)
+        conflict = execute_query(
+            """SELECT id, guest_name, check_in, check_out FROM reservations 
+               WHERE room_id = %s 
+               AND status NOT IN ('cancelled', 'checked_out')
+               AND check_in < %s AND check_out > %s""",
+            (room_id, check_out, check_in),
+            fetchone=True
+        )
+        
+        if conflict:
+            flash(f'Room is already booked from {conflict["check_in"]} to {conflict["check_out"]} by {conflict["guest_name"]}. Please choose different dates or another room.', 'error')
+            return redirect(url_for('reservations'))
         
         # Insert reservation
         reservation_id = execute_query(

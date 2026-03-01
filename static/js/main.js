@@ -458,3 +458,16 @@ function openEditStaffModal(id) {
         })
         .catch(err => alert('Error loading staff data: ' + err.message));
 }
+
+// Reservation Edit Modal
+function openEditReservationModal(reservation) {
+    document.getElementById('edit_guest_name').value = reservation.guest_name;
+    document.getElementById('edit_room_number').value = reservation.room_number + ' (' + reservation.room_type + ')';
+    document.getElementById('edit_status').value = reservation.status;
+    document.getElementById('edit_payment_status').value = reservation.payment_status;
+
+    const form = document.getElementById('editReservationForm');
+    form.action = '/reservations/update/' + reservation.id;
+
+    openModal('editReservationModal');
+}
